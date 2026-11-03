@@ -176,6 +176,59 @@ class QuietLevels:
     CONFIG_FILES = 32
 
 
+#######
+# START OF MODIFICATION FOR CLASS
+#######
+
+
+INTERACTIVE_DICT = {
+    "ask": 1,
+    "choose": 2,
+}
+
+QUIET_DICT = {
+    "encoding": 1,
+    "binary-file": 2,
+    "disabled-fixes": 4,
+    "non-automatic-fixes": 8,
+    "fixes": 16,
+    "config-files": 32,
+}
+
+
+def _parse_bitmask(
+    value: str, mapping: dict[str, int], opt_name: str
+) -> int:
+    try:
+        return int(value)
+    except ValueError:
+        pass
+
+    mask = 0
+    for part in value.split(","):
+        part = part.strip()
+        if part in mapping:
+            mask |= mapping[part]
+        else:
+            valid_names = ", ".join(mapping.keys())
+            raise argparse.ArgumentTypeError(
+                f"invalid {opt_name} value '{part}'. "
+                f"Valid names are: {valid_names}"
+            )
+    return mask
+
+
+def parse_interactive(val: str) -> int:
+    return _parse_bitmask(val, INTERACTIVE_DICT, "--interactive")
+
+
+def parse_quiet_level(val: str) -> int:
+    return _parse_bitmask(val, QUIET_DICT, "--quiet-level")
+
+#######
+# ENDf OF MODIFICATION FOR CLASS
+#######
+
 class GlobMatch:
     def __init__(self, pattern: list[str]) -> None:
         self.pattern_list: list[str] = pattern
@@ -449,14 +502,30 @@ def parse_options(
         default=False,
         help="write changes in place if possible",
     )
+
+
+#######
+# START OF MODIFICATION FOR CLASS
+#######
     parser.add_argument(
-        "--exit-non-zero-on-fix",
-        action="store_true",
-        default=False,
-        help="exit with a non-zero status if any changes were written, "
-        "even if every misspelling was fixed. Has no effect without "
-        "-w/--write-changes or -i/--interactive.",
+        "-i",
+        "--interactive",
+        action="store",
+        type=parse_interactive,
+        default=0,
+        
+        help="set interactive mode when writing changes:\n"
+        "- 0: no interactivity.\n"
+        "- 1 or 'ask': ask for confirmation; 'a'/'s' answer for the rest of the file.\n"
+        "- 2 or 'choose': ask user to choose one fix when more than one is available;"
+        " 'Na'/'s' answer for the rest of the file.\n"
+        "- 3 or 'ask,choose': both 1 and 2",
+        metavar="MODE",
     )
+
+#######
+# END OF MODIFICATION FOR CLASS
+#######
 
     parser.add_argument(
         "-D",
@@ -588,43 +657,32 @@ def parse_options(
         "to-be-excluded lines exactly",
     )
 
-    parser.add_argument(
-        "-i",
-        "--interactive",
-        action="store",
-        type=int,
-        default=0,
-        choices=range(0, 4),
-        help="set interactive mode when writing changes:\n"
-        "- 0: no interactivity.\n"
-        "- 1: ask for confirmation; 'a'/'s' answer for the rest of the file.\n"
-        "- 2: ask user to choose one fix when more than one is available;"
-        " 'Na'/'s' answer for the rest of the file.\n"
-        "- 3: both 1 and 2",
-        metavar="MODE",
-    )
 
+#######
+# START OF MODIFICATION FOR CLASS
+#######
     parser.add_argument(
         "-q",
         "--quiet-level",
         action="store",
-        type=int,
+        type=parse_quiet_level,
         default=34,
-        choices=range(0, 64),
         help="bitmask that allows suppressing messages:\n"
         "- 0: print all messages.\n"
-        "- 1: disable warnings about wrong encoding.\n"
-        "- 2: disable warnings about binary files.\n"
-        "- 4: omit warnings about automatic fixes that were disabled in the dictionary.\n"  # noqa: E501
-        "- 8: don't print anything for non-automatic fixes.\n"
-        "- 16: don't print the list of fixed files.\n"
-        "- 32: don't print configuration files.\n"
+        "- 1 or 'encoding': disable warnings about wrong encoding.\n"
+        "- 2 or 'binary-file': disable warnings about binary files.\n"
+        "- 4 or 'disabled-fixes': omit warnings about automatic fixes that were disabled in the dictionary.\n"
+        "- 8 or 'non-automatic-fixes': don't print anything for non-automatic fixes.\n"
+        "- 16 or 'fixes': don't print the list of fixed files.\n"
+        "- 32 or 'config-files': don't print configuration files.\n"
         "As usual with bitmasks, these levels can be "
-        "combined; e.g. use 3 for levels 1+2, 7 for "
-        "1+2+4, 23 for 1+2+4+16, etc. "
+        "combined; e.g. use 3 or 'encoding,binary-file' for levels 1+2, etc. "
         "The default mask is %(default)s.",
         metavar="LEVEL",
     )
+#######
+# END OF MODIFICATION FOR CLASS
+#######
 
     parser.add_argument(
         "-e",
