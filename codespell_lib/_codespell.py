@@ -177,9 +177,8 @@ class QuietLevels:
 
 
 #######
-# START OF MODIFICATION FOR CLASS
+# START OF MODIFICATION FOR CLASS (PART 1: PARSING LOGIC)
 #######
-
 
 INTERACTIVE_DICT = {
     "ask": 1,
@@ -226,8 +225,9 @@ def parse_quiet_level(val: str) -> int:
     return _parse_bitmask(val, QUIET_DICT, "--quiet-level")
 
 #######
-# ENDf OF MODIFICATION FOR CLASS
+# END OF MODIFICATION FOR CLASS (PART 1: PARSING LOGIC)
 #######
+
 
 class GlobMatch:
     def __init__(self, pattern: list[str]) -> None:
@@ -502,30 +502,15 @@ def parse_options(
         default=False,
         help="write changes in place if possible",
     )
-
-
-#######
-# START OF MODIFICATION FOR CLASS
-#######
+    
     parser.add_argument(
-        "-i",
-        "--interactive",
-        action="store",
-        type=parse_interactive,
-        default=0,
-        
-        help="set interactive mode when writing changes:\n"
-        "- 0: no interactivity.\n"
-        "- 1 or 'ask': ask for confirmation; 'a'/'s' answer for the rest of the file.\n"
-        "- 2 or 'choose': ask user to choose one fix when more than one is available;"
-        " 'Na'/'s' answer for the rest of the file.\n"
-        "- 3 or 'ask,choose': both 1 and 2",
-        metavar="MODE",
+        "--exit-non-zero-on-fix",
+        action="store_true",
+        default=False,
+        help="exit with a non-zero status if any changes were written, "
+        "even if every misspelling was fixed. Has no effect without "
+        "-w/--write-changes or -i/--interactive.",
     )
-
-#######
-# END OF MODIFICATION FOR CLASS
-#######
 
     parser.add_argument(
         "-D",
@@ -657,10 +642,24 @@ def parse_options(
         "to-be-excluded lines exactly",
     )
 
+#######
+# START OF MODIFICATION FOR CLASS (PART 2: ARGUMENT PARSING SETUP)
+#######
+    parser.add_argument(
+        "-i",
+        "--interactive",
+        action="store",
+        type=parse_interactive,
+        default=0,
+        help="set interactive mode when writing changes:\n"
+        "- 0: no interactivity.\n"
+        "- 1 or 'ask': ask for confirmation; 'a'/'s' answer for the rest of the file.\n"
+        "- 2 or 'choose': ask user to choose one fix when more than one is available;"
+        " 'Na'/'s' answer for the rest of the file.\n"
+        "- 3 or 'ask,choose': both 1 and 2",
+        metavar="MODE",
+    )
 
-#######
-# START OF MODIFICATION FOR CLASS
-#######
     parser.add_argument(
         "-q",
         "--quiet-level",
@@ -681,7 +680,7 @@ def parse_options(
         metavar="LEVEL",
     )
 #######
-# END OF MODIFICATION FOR CLASS
+# END OF MODIFICATION FOR CLASS (PART 2: ARGUMENT PARSING SETUP)
 #######
 
     parser.add_argument(
